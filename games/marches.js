@@ -43,13 +43,17 @@ export default function mount(container, ctx) {
         <div class="hud-stat"><div class="label">Marche</div><div class="value mono" id="step">0 / ${TOTAL_STEPS}</div></div>
       </div>
       <div class="stage">
-        <div class="progress-bar"><div class="progress-fill" id="fill" style="width:0%"></div></div>
-        <div class="qte-prompt" id="prompt"><svg viewBox="0 0 24 24"></svg></div>
-        <div class="dpad">
-          <button type="button" class="dpad-up" data-dir="up"><svg viewBox="0 0 24 24">${ARROWS.up}</svg></button>
-          <button type="button" class="dpad-left" data-dir="left"><svg viewBox="0 0 24 24">${ARROWS.left}</svg></button>
-          <button type="button" class="dpad-down" data-dir="down"><svg viewBox="0 0 24 24">${ARROWS.down}</svg></button>
-          <button type="button" class="dpad-right" data-dir="right"><svg viewBox="0 0 24 24">${ARROWS.right}</svg></button>
+        <div class="marches-layout">
+          <div class="v-progress"><div class="v-progress-fill" id="fill" style="height:0%"></div></div>
+          <div class="marches-main">
+            <div class="qte-prompt" id="prompt"><svg viewBox="0 0 24 24"></svg></div>
+            <div class="dpad">
+              <button type="button" class="dpad-up" data-dir="up"><svg viewBox="0 0 24 24">${ARROWS.up}</svg></button>
+              <button type="button" class="dpad-left" data-dir="left"><svg viewBox="0 0 24 24">${ARROWS.left}</svg></button>
+              <button type="button" class="dpad-down" data-dir="down"><svg viewBox="0 0 24 24">${ARROWS.down}</svg></button>
+              <button type="button" class="dpad-right" data-dir="right"><svg viewBox="0 0 24 24">${ARROWS.right}</svg></button>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -117,7 +121,7 @@ export default function mount(container, ctx) {
     const stepEl = document.getElementById("step");
     const fillEl = document.getElementById("fill");
     if (stepEl) stepEl.textContent = `${progress} / ${TOTAL_STEPS}`;
-    if (fillEl) fillEl.style.width = `${(progress / TOTAL_STEPS) * 100}%`;
+    if (fillEl) fillEl.style.height = `${(progress / TOTAL_STEPS) * 100}%`;
   }
 
   async function finish() {

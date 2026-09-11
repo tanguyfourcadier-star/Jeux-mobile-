@@ -1,9 +1,9 @@
 import { showResult } from "../app.js";
 
-const HOLE_COUNT = 9;
-const DURATION_MS = 30000;
-const MIN_LIFE = 1000;
-const MAX_LIFE = 2000;
+const HOLE_COUNT = 15; // 3 colonnes x 5 lignes
+const DURATION_MS = 40000;
+const MIN_LIFE = 600;
+const MAX_LIFE = 1300;
 
 const COLORS = [
   { key: "red", css: "var(--coral)", points: 1, must: true },
@@ -37,7 +37,7 @@ export default function mount(container, ctx) {
   function renderIntro() {
     container.innerHTML = `
       <div class="stage">
-        <div class="stage-msg">30 secondes de taupes</div>
+        <div class="stage-msg">40 secondes de taupes</div>
         <div class="stage-sub">Rouge = tape (+1), Doré = tape (+3), Bleu = ne tape pas (-2). Plusieurs taupes peuvent sortir en même temps, de plus en plus vite.</div>
         <div class="mole-legend">
           <span><i style="background:var(--coral)"></i>+1</span>
@@ -57,7 +57,7 @@ export default function mount(container, ctx) {
     holes.fill(null);
     container.innerHTML = `
       <div class="hud">
-        <div class="hud-stat"><div class="label">Temps</div><div class="value mono" id="time">30.0s</div></div>
+        <div class="hud-stat"><div class="label">Temps</div><div class="value mono" id="time">40.0s</div></div>
         <div class="hud-stat"><div class="label">Score</div><div class="value mono" id="score">0</div></div>
       </div>
       <div class="stage">
@@ -89,31 +89,40 @@ export default function mount(container, ctx) {
     spawnTimeout = setTimeout(trySpawn, delay);
   }
 
+  function spawnOne() {
+    const emptyIdx = holes.map((h, i) => (h ? -1 : i)).filter((i) => i >= 0);
+    if (!emptyIdx.length) return false;
+    const i = emptyIdx[Math.floor(Math.random() * emptyIdx.length)];
+    const color = pickColor();
+    const life = MIN_LIFE + Math.random() * (MAX_LIFE - MIN_LIFE);
+    const holeEl = container.querySelector(`.mole-hole[data-i="${i}"]`);
+    if (holeEl) {
+      holeEl.style.setProperty("--mole-color", color.css);
+      holeEl.classList.add("up");
+    }
+    const hideTimeout = setTimeout(() => {
+      if (holes[i] && holes[i].color === color) {
+        holes[i] = null;
+        if (holeEl) holeEl.classList.remove("up");
+      }
+    }, life);
+    holes[i] = { color, hideTimeout };
+    return true;
+  }
+
   function trySpawn() {
     if (cancelled || !running) return;
     if (performance.now() >= endAt) return finish();
 
-    const emptyIdx = holes.map((h, i) => (h ? -1 : i)).filter((i) => i >= 0);
-    if (emptyIdx.length) {
-      const i = emptyIdx[Math.floor(Math.random() * emptyIdx.length)];
-      const color = pickColor();
-      const life = MIN_LIFE + Math.random() * (MAX_LIFE - MIN_LIFE);
-      const holeEl = container.querySelector(`.mole-hole[data-i="${i}"]`);
-      if (holeEl) {
-        holeEl.style.setProperty("--mole-color", color.css);
-        holeEl.classList.add("up");
-      }
-      const hideTimeout = setTimeout(() => {
-        if (holes[i] && holes[i].color === color) {
-          holes[i] = null;
-          if (holeEl) holeEl.classList.remove("up");
-        }
-      }, life);
-      holes[i] = { color, hideTimeout };
+    // plus la partie avance, plus on tente de faire sortir de taupes à la fois
+    const ratio = elapsedRatio();
+    const attempts = 1 + Math.floor(ratio * 2.6); // 1 à 3 tentatives
+    for (let a = 0; a < attempts; a++) {
+      if (!spawnOne()) break;
     }
 
     // cadence qui accélère avec le temps écoulé
-    const nextDelay = Math.max(220, 650 - elapsedRatio() * 430);
+    const nextDelay = Math.max(170, 520 - ratio * 350);
     scheduleSpawn(nextDelay);
   }
 

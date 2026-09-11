@@ -3,20 +3,21 @@ import { requestTiltPermission, createSteering } from "../tilt-input.js";
 
 const LOGICAL_W = 300;
 const LOGICAL_H = 460;
-const TRACK_MARGIN = 34; // piste resserrée = plus difficile à garder
-const CAR_W = 30;
-const CAR_H = 52;
+const TRACK_MARGIN = 38; // piste encore plus resserrée = plus difficile à garder
+const CAR_W = 28;
+const CAR_H = 50;
 const PLAYER_Y = LOGICAL_H - 78;
-const STEER_RATE = 1.8; // vitesse de déplacement latéral (0..1 / s) à inclinaison max
+const STEER_RATE = 1.85; // vitesse de déplacement latéral (0..1 / s) à inclinaison max
 
-const BASE_SPEED_START = 135; // unités / s en début de course
-const BASE_SPEED_END = 245; // unités / s en fin de course : la vitesse de base monte tout au long
-const DISTANCE_TOTAL = 18000; // ~1min30 pour un rythme de jeu typique (plus vite si boosts enchaînés)
+const BASE_SPEED_START = 140; // unités / s en début de course
+const BASE_SPEED_END = 265; // unités / s en fin de course : la vitesse de base monte tout au long
+const DISTANCE_TOTAL = 21500; // parcours un peu plus long
 const PIXELS_PER_UNIT = 0.85;
 
 const MAX_STACK = 4;
 const STACK_BONUS = 0.3; // +30% de vitesse par boost empilé (permanent tant qu'on ne percute rien)
 const HIT_STUN_MS = 420; // court ralentissement "choc" après un obstacle, indépendant des boosts
+const BOOST_LOSS = 2; // un choc ne fait perdre que 2 boosts sur les 4, pas la pile entière
 
 // Parcours fixe (toujours le même, pour comparer les temps équitablement).
 // p = fraction de la distance totale, x = position normalisée sur la piste (0 = gauche, 1 = droite)
@@ -74,7 +75,7 @@ export default function mount(container, ctx) {
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">Chrono Piste</div>
-        <div class="stage-sub">Toujours le même parcours, ~1min30 à rythme normal. Incline le téléphone à gauche/droite pour te diriger. Les zones dorées donnent un boost permanent, cumulable jusqu'à 4 — mais toucher un bord de piste ou un plot te fait tout perdre d'un coup. La vitesse de base augmente au fil de la course.</div>
+        <div class="stage-sub">Toujours le même parcours, plus long et plus difficile. Incline le téléphone à gauche/droite pour te diriger. Les zones dorées donnent un boost permanent, cumulable jusqu'à 4 — toucher un bord de piste ou un plot te fait perdre 2 boosts d'un coup. La vitesse de base augmente au fil de la course.</div>
         <button class="btn btn-primary" type="button" id="start">Démarrer</button>
       </div>
     `;
@@ -133,7 +134,7 @@ export default function mount(container, ctx) {
 
   function loseBoosts(reason, now) {
     if (boostStack > 0) {
-      boostStack = 0;
+      boostStack = Math.max(0, boostStack - BOOST_LOSS);
       ctx.toast(reason);
       updateBoostHud();
     }
@@ -156,7 +157,7 @@ export default function mount(container, ctx) {
     const nextX = carXNorm + steerX * STEER_RATE * dt;
     const clamped = Math.max(0, Math.min(1, nextX));
     if ((nextX <= 0 || nextX >= 1) && Math.abs(steerX) > 0.05) {
-      loseBoosts("Mur touché ! Boosts perdus", now);
+      loseBoosts(`Mur touché ! -${BOOST_LOSS} boosts`, now);
     }
     carXNorm = clamped;
 
@@ -167,7 +168,7 @@ export default function mount(container, ctx) {
         if (dx < 0.13) {
           w.done = true;
           if (w.type === "obstacle") {
-            loseBoosts("Touché ! Boosts perdus", now);
+            loseBoosts(`Touché ! -${BOOST_LOSS} boosts`, now);
           } else {
             boostStack = Math.min(MAX_STACK, boostStack + 1);
             ctx.toast(`Boost x${boostStack} !`);
