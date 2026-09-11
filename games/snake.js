@@ -1,7 +1,7 @@
 import { showResult } from "../app.js";
 
 const COLS = 14;
-const ROWS = 20;
+const ROWS = 15;
 const CELL = 20;
 const LOGICAL_W = COLS * CELL;
 const LOGICAL_H = ROWS * CELL;

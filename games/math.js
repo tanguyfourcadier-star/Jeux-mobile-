@@ -50,7 +50,7 @@ export default function mount(container, ctx) {
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">45 secondes de calcul mental</div>
-        <div class="stage-sub">Additions, soustractions, multiplications. Touche la bonne réponse le plus vite possible, aucune pénalité si tu te trompes.</div>
+        <div class="stage-sub">Additions, soustractions, multiplications. Touche la bonne réponse le plus vite possible : -1 point si tu te trompes.</div>
         <button class="btn btn-primary" type="button" id="start">Commencer</button>
       </div>
     `;
@@ -110,12 +110,10 @@ export default function mount(container, ctx) {
       if (Number(b.dataset.v) === answer) b.classList.add("is-correct");
       else if (b === btn) b.classList.add("is-wrong");
     });
-    if (value === answer) {
-      score += 1;
-      const scoreEl = document.getElementById("score");
-      if (scoreEl) scoreEl.textContent = String(score);
-    }
-    setTimeout(nextQuestion, 380);
+    score = Math.max(0, score + (value === answer ? 1 : -1));
+    const scoreEl = document.getElementById("score");
+    if (scoreEl) scoreEl.textContent = String(score);
+    setTimeout(nextQuestion, 220);
   }
 
   async function finish() {

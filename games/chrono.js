@@ -3,33 +3,55 @@ import { requestTiltPermission, createSteering } from "../tilt-input.js";
 
 const LOGICAL_W = 300;
 const LOGICAL_H = 460;
-const TRACK_MARGIN = 26;
-const CAR_W = 34;
-const CAR_H = 54;
+const TRACK_MARGIN = 34; // piste resserrée = plus difficile à garder
+const CAR_W = 30;
+const CAR_H = 52;
 const PLAYER_Y = LOGICAL_H - 78;
-const BASE_SPEED = 180; // unités de progression / seconde
-const DISTANCE_TOTAL = 10800; // ~60s à vitesse de base
+const STEER_RATE = 1.8; // vitesse de déplacement latéral (0..1 / s) à inclinaison max
+
+const BASE_SPEED_START = 135; // unités / s en début de course
+const BASE_SPEED_END = 245; // unités / s en fin de course : la vitesse de base monte tout au long
+const DISTANCE_TOTAL = 18000; // ~1min30 pour un rythme de jeu typique (plus vite si boosts enchaînés)
 const PIXELS_PER_UNIT = 0.85;
-const STEER_RATE = 1.7; // vitesse de déplacement latéral (0..1 / s) à inclinaison max
+
+const MAX_STACK = 4;
+const STACK_BONUS = 0.3; // +30% de vitesse par boost empilé (permanent tant qu'on ne percute rien)
+const HIT_STUN_MS = 420; // court ralentissement "choc" après un obstacle, indépendant des boosts
 
 // Parcours fixe (toujours le même, pour comparer les temps équitablement).
 // p = fraction de la distance totale, x = position normalisée sur la piste (0 = gauche, 1 = droite)
 const LEVEL = [
-  { p: 0.06, type: "boost", x: 0.5 },
-  { p: 0.14, type: "obstacle", x: 0.25 },
-  { p: 0.14, type: "obstacle", x: 0.75 },
-  { p: 0.22, type: "boost", x: 0.18 },
-  { p: 0.3, type: "obstacle", x: 0.5 },
-  { p: 0.38, type: "boost", x: 0.82 },
-  { p: 0.46, type: "obstacle", x: 0.3 },
-  { p: 0.46, type: "obstacle", x: 0.62 },
-  { p: 0.54, type: "boost", x: 0.5 },
-  { p: 0.62, type: "obstacle", x: 0.72 },
-  { p: 0.7, type: "obstacle", x: 0.2 },
-  { p: 0.7, type: "obstacle", x: 0.48 },
-  { p: 0.78, type: "boost", x: 0.28 },
-  { p: 0.86, type: "obstacle", x: 0.6 },
-  { p: 0.93, type: "boost", x: 0.5 },
+  { p: 0.04, type: "boost", x: 0.5 },
+  { p: 0.09, type: "obstacle", x: 0.28 },
+  { p: 0.09, type: "obstacle", x: 0.72 },
+  { p: 0.14, type: "boost", x: 0.2 },
+  { p: 0.18, type: "obstacle", x: 0.5 },
+  { p: 0.22, type: "obstacle", x: 0.35 },
+  { p: 0.22, type: "obstacle", x: 0.65 },
+  { p: 0.27, type: "boost", x: 0.82 },
+  { p: 0.31, type: "obstacle", x: 0.55 },
+  { p: 0.35, type: "obstacle", x: 0.22 },
+  { p: 0.35, type: "obstacle", x: 0.78 },
+  { p: 0.39, type: "boost", x: 0.5 },
+  { p: 0.43, type: "obstacle", x: 0.3 },
+  { p: 0.43, type: "obstacle", x: 0.7 },
+  { p: 0.48, type: "boost", x: 0.18 },
+  { p: 0.52, type: "obstacle", x: 0.45 },
+  { p: 0.52, type: "obstacle", x: 0.65 },
+  { p: 0.57, type: "obstacle", x: 0.25 },
+  { p: 0.61, type: "boost", x: 0.5 },
+  { p: 0.65, type: "obstacle", x: 0.35 },
+  { p: 0.65, type: "obstacle", x: 0.75 },
+  { p: 0.7, type: "boost", x: 0.85 },
+  { p: 0.74, type: "obstacle", x: 0.5 },
+  { p: 0.78, type: "obstacle", x: 0.2 },
+  { p: 0.78, type: "obstacle", x: 0.6 },
+  { p: 0.83, type: "boost", x: 0.4 },
+  { p: 0.87, type: "obstacle", x: 0.6 },
+  { p: 0.87, type: "obstacle", x: 0.3 },
+  { p: 0.91, type: "boost", x: 0.5 },
+  { p: 0.95, type: "obstacle", x: 0.45 },
+  { p: 0.95, type: "obstacle", x: 0.65 },
 ].map((w) => ({ ...w, d: w.p * DISTANCE_TOTAL, done: false }));
 
 export default function mount(container, ctx) {
@@ -39,9 +61,8 @@ export default function mount(container, ctx) {
   let lastTime = 0;
   let progress = 0;
   let carXNorm = 0.5;
-  let speedMult = 1;
-  let effectUntil = 0;
-  let effectValue = 1;
+  let boostStack = 0;
+  let hitStunUntil = 0;
   let startTime = 0;
   let steering = null;
   let level = [];
@@ -53,12 +74,13 @@ export default function mount(container, ctx) {
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">Chrono Piste</div>
-        <div class="stage-sub">Toujours le même parcours. Incline le téléphone à gauche/droite pour te diriger, passe sur les zones dorées pour accélérer, évite les plots. Termine le plus vite possible.</div>
+        <div class="stage-sub">Toujours le même parcours, ~1min30 à rythme normal. Incline le téléphone à gauche/droite pour te diriger. Les zones dorées donnent un boost permanent, cumulable jusqu'à 4 — mais toucher un bord de piste ou un plot te fait tout perdre d'un coup. La vitesse de base augmente au fil de la course.</div>
         <button class="btn btn-primary" type="button" id="start">Démarrer</button>
       </div>
     `;
     container.querySelector("#start").addEventListener("click", async () => {
       await requestTiltPermission();
+      if (cancelled) return;
       startRun();
     });
   }
@@ -66,9 +88,8 @@ export default function mount(container, ctx) {
   function startRun() {
     progress = 0;
     carXNorm = 0.5;
-    speedMult = 1;
-    effectUntil = 0;
-    effectValue = 1;
+    boostStack = 0;
+    hitStunUntil = 0;
     running = true;
     level = LEVEL.map((w) => ({ ...w, done: false }));
 
@@ -76,6 +97,7 @@ export default function mount(container, ctx) {
       <div class="hud">
         <div class="hud-stat"><div class="label">Temps</div><div class="value mono" id="time">0.0s</div></div>
         <div class="hud-stat"><div class="label">Parcours</div><div class="value mono" id="pct">0%</div></div>
+        <div class="hud-stat"><div class="label">Boosts</div><div class="value mono" id="boosts">0/4</div></div>
       </div>
       <div class="stage">
         <canvas id="cv" width="${LOGICAL_W}" height="${LOGICAL_H}"></canvas>
@@ -84,6 +106,7 @@ export default function mount(container, ctx) {
     `;
     canvas = document.getElementById("cv");
     cx = canvas.getContext("2d");
+    if (steering) steering.destroy();
     steering = createSteering(canvas);
 
     startTime = performance.now();
@@ -96,7 +119,7 @@ export default function mount(container, ctx) {
     const dt = Math.min(0.05, (now - lastTime) / 1000);
     lastTime = now;
     update(dt, now);
-    draw();
+    draw(now);
     const timeEl = document.getElementById("time");
     const pctEl = document.getElementById("pct");
     if (timeEl) timeEl.textContent = `${((now - startTime) / 1000).toFixed(1)}s`;
@@ -108,28 +131,47 @@ export default function mount(container, ctx) {
     raf = requestAnimationFrame(loop);
   }
 
+  function loseBoosts(reason, now) {
+    if (boostStack > 0) {
+      boostStack = 0;
+      ctx.toast(reason);
+      updateBoostHud();
+    }
+    hitStunUntil = now + HIT_STUN_MS;
+  }
+
+  function updateBoostHud() {
+    const el = document.getElementById("boosts");
+    if (el) el.textContent = `${boostStack}/${MAX_STACK}`;
+  }
+
   function update(dt, now) {
-    if (now > effectUntil) effectValue = 1;
-    speedMult = effectValue;
-    progress += BASE_SPEED * speedMult * dt;
+    const ratio = Math.min(1, progress / DISTANCE_TOTAL);
+    const baseSpeed = BASE_SPEED_START + (BASE_SPEED_END - BASE_SPEED_START) * ratio;
+    let mult = 1 + boostStack * STACK_BONUS;
+    if (now < hitStunUntil) mult *= 0.4;
+    progress += baseSpeed * mult * dt;
 
     const steerX = steering ? steering.x : 0;
-    carXNorm = Math.max(0, Math.min(1, carXNorm + steerX * STEER_RATE * dt));
+    const nextX = carXNorm + steerX * STEER_RATE * dt;
+    const clamped = Math.max(0, Math.min(1, nextX));
+    if ((nextX <= 0 || nextX >= 1) && Math.abs(steerX) > 0.05) {
+      loseBoosts("Mur touché ! Boosts perdus", now);
+    }
+    carXNorm = clamped;
 
     for (const w of level) {
       if (w.done) continue;
       if (Math.abs(progress - w.d) < 26) {
         const dx = Math.abs(carXNorm - w.x);
-        if (dx < 0.14) {
+        if (dx < 0.13) {
           w.done = true;
           if (w.type === "obstacle") {
-            effectValue = 0.35;
-            effectUntil = now + 550;
-            ctx.toast("Touché ! ralenti");
+            loseBoosts("Touché ! Boosts perdus", now);
           } else {
-            effectValue = 1.8;
-            effectUntil = now + 1300;
-            ctx.toast("Boost !");
+            boostStack = Math.min(MAX_STACK, boostStack + 1);
+            ctx.toast(`Boost x${boostStack} !`);
+            updateBoostHud();
           }
         }
       }
@@ -140,7 +182,7 @@ export default function mount(container, ctx) {
     return TRACK_MARGIN + norm * (LOGICAL_W - TRACK_MARGIN * 2);
   }
 
-  function draw() {
+  function draw(now) {
     cx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
     cx.fillStyle = "#1f2230";
     cx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
@@ -173,7 +215,8 @@ export default function mount(container, ctx) {
       }
     });
 
-    drawCar(trackX(carXNorm), PLAYER_Y, speedMult > 1 ? "#ffe08a" : speedMult < 1 ? "#ff9a9a" : "#6bcf9c");
+    const carColor = now < hitStunUntil ? "#ff9a9a" : boostStack > 0 ? "#ffe08a" : "#6bcf9c";
+    drawCar(trackX(carXNorm), PLAYER_Y, carColor);
   }
 
   function drawCar(x, y, color) {

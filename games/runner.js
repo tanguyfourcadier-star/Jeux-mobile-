@@ -1,13 +1,13 @@
 import { showResult } from "../app.js";
 
 const LOGICAL_W = 320;
-const LOGICAL_H = 440;
+const LOGICAL_H = 360;
 const LANES = 3;
 const LANE_W = LOGICAL_W / LANES;
-const CAR_W = 44;
-const CAR_H = 68;
+const CAR_W = 42;
+const CAR_H = 62;
 const BASE_SPEED = 210; // px/s
-const PLAYER_Y = LOGICAL_H - 86;
+const PLAYER_Y = LOGICAL_H - 70;
 
 export default function mount(container, ctx) {
   let running = false;

@@ -32,14 +32,40 @@ export default function mount(container, ctx) {
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">Bille Folle</div>
-        <div class="stage-sub">Incline le téléphone pour rouler la bille jusqu'à la zone en surbrillance. Chaque zone atteinte en fait apparaître une nouvelle ailleurs, et rapporte plus de points si tu enchaînes sans tomber. 60 secondes, un maximum de points.</div>
+        <div class="stage-sub">Incline le téléphone pour rouler la bille jusqu'à la zone en surbrillance. Chaque zone atteinte en fait apparaître une nouvelle ailleurs, et rapporte plus de points si tu enchaînes sans tomber. 60 secondes, un maximum de points. Une calibration "à plat" est demandée avant de démarrer.</div>
         <button class="btn btn-primary" type="button" id="start">Commencer</button>
       </div>
     `;
-    container.querySelector("#start").addEventListener("click", async () => {
-      await requestTiltPermission();
-      startRun();
-    });
+    container.querySelector("#start").addEventListener("click", onStartClick);
+  }
+
+  async function onStartClick() {
+    await requestTiltPermission();
+    if (cancelled) return;
+    if (!steering) steering = createSteering(container);
+    renderCalibration();
+  }
+
+  function renderCalibration() {
+    container.innerHTML = `
+      <div class="stage">
+        <div class="stage-msg">Calibration</div>
+        <div class="stage-sub">Pose ton téléphone bien à plat (table ou main immobile à l'horizontale), puis appuie sur Calibrer. Sur ordinateur, calibre directement.</div>
+        <button class="btn btn-primary" type="button" id="calibrate">Calibrer</button>
+      </div>
+    `;
+    container.querySelector("#calibrate").addEventListener("click", onCalibrateClick);
+  }
+
+  async function onCalibrateClick() {
+    const btn = document.getElementById("calibrate");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Calibration...";
+    }
+    await steering.calibrate(600);
+    if (cancelled) return;
+    startRun();
   }
 
   function startRun() {
@@ -63,7 +89,6 @@ export default function mount(container, ctx) {
     `;
     canvas = document.getElementById("cv");
     cx = canvas.getContext("2d");
-    steering = createSteering(canvas);
 
     lastTime = performance.now();
     raf = requestAnimationFrame(loop);

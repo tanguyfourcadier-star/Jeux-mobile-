@@ -17,7 +17,6 @@ const ICONS = {
   duel: '<circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3.5 2.5-6 5-6s5 2.5 5 6M12 20c0-3.5 2.5-6 5-6s5 2.5 5 6"/>',
   flag: '<path d="M5 3v18"/><path d="M5 4h6l-1.5 3H16l-1.5 3H5"/>',
   stairs: '<path d="M3 20h4v-4h4v-4h4v-4h4V4"/>',
-  knife: '<path d="M4 16 16 4l4 4-12 12H4v-4z"/><path d="M13 7l4 4"/>',
   marble: '<circle cx="12" cy="14" r="5"/><path d="M4 8l3 2M20 8l-3 2M9 4l1 3M15 4l-1 3"/>',
 };
 
@@ -71,7 +70,7 @@ export const GAMES = [
   {
     id: "mole",
     name: "Tape-taupe",
-    tagline: "Tape les taupes dès qu'elles sortent, 30 secondes",
+    tagline: "Rouge/doré à taper, bleu à éviter — 30 secondes, de plus en plus vite",
     accent: "rose",
     unit: "taupes",
     better: "high",
@@ -98,9 +97,9 @@ export const GAMES = [
   {
     id: "aim",
     name: "Visée Express",
-    tagline: "20 secondes de cibles, entraîne-toi sans limite",
+    tagline: "20 secondes de cibles, -2 si tu tapes à côté",
     accent: "peach",
-    unit: "cibles",
+    unit: "points",
     better: "high",
     icon: ICONS.aim,
   },
@@ -117,7 +116,7 @@ export const GAMES = [
   {
     id: "chrono",
     name: "Chrono Piste",
-    tagline: "Incline ton téléphone pour piloter, toujours le même parcours, ~1 minute",
+    tagline: "Boosts permanents cumulables (x4) — un choc et tu perds tout, ~1min30",
     accent: "amber",
     unit: "ms",
     better: "low",
@@ -133,18 +132,9 @@ export const GAMES = [
     icon: ICONS.stairs,
   },
   {
-    id: "decoupe",
-    name: "Découpe Express",
-    tagline: "Tranche le cornichon au doigt le plus vite possible",
-    accent: "crimson",
-    unit: "ms",
-    better: "low",
-    icon: ICONS.knife,
-  },
-  {
     id: "bille",
     name: "Bille Folle",
-    tagline: "Incline pour guider la bille dans les zones, 60 secondes",
+    tagline: "Calibrée à plat, puis incline pour guider la bille dans les zones, 60s",
     accent: "indigo",
     unit: "points",
     better: "high",

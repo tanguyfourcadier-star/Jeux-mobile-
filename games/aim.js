@@ -8,8 +8,7 @@ const RADIUS_PX = 26;
 export default function mount(container, ctx) {
   let cancelled = false;
   let running = false;
-  let hits = 0;
-  let misses = 0;
+  let score = 0;
   let endAt = 0;
   let spawnTimeout = null;
   let hudRaf = null;
@@ -20,7 +19,7 @@ export default function mount(container, ctx) {
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">Visée Express</div>
-        <div class="stage-sub">20 secondes, des cibles apparaissent au hasard, touche-en un maximum. Rejouable à volonté pour t'entraîner.</div>
+        <div class="stage-sub">20 secondes, des cibles apparaissent au hasard. +1 par cible touchée, -2 si tu tapes à côté. Rejouable à volonté pour t'entraîner.</div>
         <button class="btn btn-primary" type="button" id="start">Commencer</button>
       </div>
     `;
@@ -28,19 +27,27 @@ export default function mount(container, ctx) {
   }
 
   function startRun() {
-    hits = 0;
-    misses = 0;
+    score = 0;
     running = true;
     endAt = performance.now() + DURATION_MS;
     container.innerHTML = `
       <div class="hud">
         <div class="hud-stat"><div class="label">Temps</div><div class="value mono" id="time">20.0s</div></div>
-        <div class="hud-stat"><div class="label">Touchées</div><div class="value mono" id="hits">0</div></div>
+        <div class="hud-stat"><div class="label">Score</div><div class="value mono" id="hits">0</div></div>
       </div>
-      <div class="stage" id="field" style="min-height:340px;touch-action:none;"></div>
+      <div class="stage" id="field" style="min-height:280px;max-height:42vh;touch-action:none;"></div>
     `;
+    document.getElementById("field").addEventListener("pointerdown", onFieldMiss);
     spawnTarget();
     hudTick();
+  }
+
+  function onFieldMiss() {
+    if (!running || cancelled) return;
+    score = Math.max(0, score - 2);
+    const hitsEl = document.getElementById("hits");
+    if (hitsEl) hitsEl.textContent = String(score);
+    ctx.toast("-2");
   }
 
   function elapsedRatio() {
@@ -67,7 +74,6 @@ export default function mount(container, ctx) {
     const visible = Math.max(MIN_VISIBLE, START_VISIBLE - elapsedRatio() * (START_VISIBLE - MIN_VISIBLE));
     spawnTimeout = setTimeout(() => {
       if (dot.isConnected) {
-        misses += 1;
         spawnTarget();
       }
     }, visible);
@@ -76,10 +82,10 @@ export default function mount(container, ctx) {
   function onHit(dot) {
     if (!running || cancelled) return;
     clearTimeout(spawnTimeout);
-    hits += 1;
+    score += 1;
     dot.remove();
     const hitsEl = document.getElementById("hits");
-    if (hitsEl) hitsEl.textContent = String(hits);
+    if (hitsEl) hitsEl.textContent = String(score);
     spawnTarget();
   }
 
@@ -100,8 +106,8 @@ export default function mount(container, ctx) {
     running = false;
     clearTimeout(spawnTimeout);
     if (hudRaf) cancelAnimationFrame(hudRaf);
-    const outcome = await ctx.finish(hits);
-    showResult(container, ctx, hits, outcome, { onReplay: startRun });
+    const outcome = await ctx.finish(score);
+    showResult(container, ctx, score, outcome, { onReplay: startRun });
   }
 
   return () => {

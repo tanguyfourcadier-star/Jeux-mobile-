@@ -23,7 +23,7 @@ service cloud.firestore {
 
       allow create: if request.resource.data.keys().hasOnly(['game', 'player', 'value', 'meta', 'date', 'createdAt'])
                     && request.resource.data.game is string
-                    && request.resource.data.game in ['reflex', 'memory', 'taprush', 'daily', 'runner', 'mole', 'math', 'snake', 'aim', 'chrono', 'marches', 'decoupe', 'bille']
+                    && request.resource.data.game in ['reflex', 'memory', 'taprush', 'daily', 'runner', 'mole', 'math', 'snake', 'aim', 'chrono', 'marches', 'bille']
                     && request.resource.data.player is string
                     && request.resource.data.player.size() > 0
                     && request.resource.data.player.size() <= 18

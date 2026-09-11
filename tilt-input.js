@@ -38,10 +38,35 @@ export function createSteering(target) {
   let dragY = 0;
   let dragging = false;
   let dragStart = null;
+  let rawGamma = 0;
+  let rawBeta = 0;
+  // Par défaut (sans calibration) : ~35° de beta = inclinaison naturelle en main.
+  let baseGamma = 0;
+  let baseBeta = 35;
+  let sampling = false;
+  let samples = [];
 
   function onOrientation(e) {
-    tiltX = clamp((e.gamma || 0) / 22, -1, 1);
-    tiltY = clamp(((e.beta || 0) - 35) / 22, -1, 1); // ~35° = inclinaison naturelle en main
+    rawGamma = e.gamma || 0;
+    rawBeta = e.beta || 0;
+    if (sampling) samples.push({ g: rawGamma, b: rawBeta });
+    tiltX = clamp((rawGamma - baseGamma) / 22, -1, 1);
+    tiltY = clamp((rawBeta - baseBeta) / 22, -1, 1);
+  }
+
+  // Échantillonne l'inclinaison réelle pendant `durationMs` et en fait la
+  // nouvelle position "neutre" (0,0) — à appeler pendant que le téléphone
+  // est posé à plat. Sans capteur (ordinateur), ne change rien : le repli
+  // clavier/tactile continue de fonctionner normalement.
+  async function calibrate(durationMs = 500) {
+    samples = [];
+    sampling = true;
+    await new Promise((resolve) => setTimeout(resolve, durationMs));
+    sampling = false;
+    if (samples.length > 0) {
+      baseGamma = samples.reduce((s, v) => s + v.g, 0) / samples.length;
+      baseBeta = samples.reduce((s, v) => s + v.b, 0) / samples.length;
+    }
   }
   function onKeyDown(e) {
     if (e.key === "ArrowLeft") keyX = -1;
@@ -87,6 +112,7 @@ export function createSteering(target) {
     get y() {
       return clamp(tiltY + keyY + dragY, -1, 1);
     },
+    calibrate,
     destroy() {
       window.removeEventListener("deviceorientation", onOrientation);
       window.removeEventListener("keydown", onKeyDown);

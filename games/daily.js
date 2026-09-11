@@ -75,7 +75,7 @@ export default function mount(container, ctx) {
         <div class="hud-stat"><div class="label">Cible</div><div class="value mono" id="idx">1 / ${TARGET_COUNT}</div></div>
         <div class="hud-stat"><div class="label">Ratés</div><div class="value mono" id="miss">0</div></div>
       </div>
-      <div class="stage" id="field" style="min-height:340px;touch-action:none;"></div>
+      <div class="stage" id="field" style="min-height:280px;max-height:42vh;touch-action:none;"></div>
     `;
     const field = document.getElementById("field");
     field.addEventListener("pointerdown", onFieldTap);

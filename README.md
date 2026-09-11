@@ -1,6 +1,6 @@
 # Récré
 
-Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 14 jeux courts et un classement partagé entre amis. Gratuite à héberger, aucune app store, aucun serveur à maintenir.
+Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 13 jeux courts et un classement partagé entre amis. Gratuite à héberger, aucune app store, aucun serveur à maintenir.
 
 ## Contenu du dossier
 
@@ -24,10 +24,9 @@ games/
   snake.js     Snake — grandis sans toucher les murs ni ta queue
   aim.js       Visée Express — 20 secondes de cibles, rejouable à volonté
   duel.js      Duel local — 2 joueurs sur le même téléphone, meilleur des 5 (pas de classement partagé)
-  chrono.js    Chrono Piste — pilote un véhicule à l'inclinaison sur un parcours fixe, meilleur temps
+  chrono.js    Chrono Piste — pilote un véhicule à l'inclinaison sur un parcours fixe (~1min30), boosts permanents cumulables jusqu'à 4, tout perdu au moindre choc, meilleur temps
   marches.js   30 Marches — appuie sur le bon bouton pour grimper, erreur = -2 marches
-  decoupe.js   Découpe Express — tranche un cornichon au doigt, meilleur temps
-  bille.js     Bille Folle — guide une bille à l'inclinaison dans des zones qui changent, 60s, score max
+  bille.js     Bille Folle — guide une bille à l'inclinaison (calibrée à plat) dans des zones qui changent, 60s, score max
 ```
 
 **Jeux à inclinaison** (Chrono Piste, Bille Folle) : sur iPhone, Safari demande la permission d'accéder aux capteurs de mouvement au premier lancement de ces jeux (normal, propre à iOS 13+). Si elle est refusée ou indisponible (ordinateur, certains Android), ces jeux restent jouables au doigt (glisser sur l'écran) ou au clavier (flèches) — aucun blocage.
@@ -81,8 +80,9 @@ La première fois que le classement du **Défi du jour** est consulté, Firestor
 Si tu as déjà déployé une version précédente de Récré :
 
 1. Remplace tous les fichiers de ton dépôt par ceux de ce dossier — y compris le nouveau `tilt-input.js` à la racine, requis par `chrono.js` et `bille.js`. `git add . && git commit && git push`.
-2. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores des jeux les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement entre amis pour ces jeux-là restera vide côté serveur.
-3. `firebase-config.js` n'a pas besoin d'être retouché si tu l'avais déjà configuré.
+2. Si `games/decoupe.js` existe encore dans ton dépôt (ancienne version), supprime-le manuellement — ce jeu a été retiré et n'est plus référencé par l'appli, mais le fichier orphelin ne partira pas tout seul.
+3. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores des jeux les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement entre amis pour ces jeux-là restera vide côté serveur.
+4. `firebase-config.js` n'a pas besoin d'être retouché si tu l'avais déjà configuré.
 
 ## 6. Limites à connaître
 

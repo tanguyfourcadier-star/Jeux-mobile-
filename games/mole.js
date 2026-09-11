@@ -2,6 +2,26 @@ import { showResult } from "../app.js";
 
 const HOLE_COUNT = 9;
 const DURATION_MS = 30000;
+const MIN_LIFE = 1000;
+const MAX_LIFE = 2000;
+
+const COLORS = [
+  { key: "red", css: "var(--coral)", points: 1, must: true },
+  { key: "blue", css: "var(--sky)", points: -2, must: false },
+  { key: "gold", css: "var(--gold)", points: 3, must: true },
+];
+// poids de tirage : rouge fréquente, doré rare, bleu (piège) assez présent
+const WEIGHTS = [0.55, 0.28, 0.17];
+
+function pickColor() {
+  const r = Math.random();
+  let acc = 0;
+  for (let i = 0; i < COLORS.length; i++) {
+    acc += WEIGHTS[i];
+    if (r <= acc) return COLORS[i];
+  }
+  return COLORS[0];
+}
 
 export default function mount(container, ctx) {
   let cancelled = false;
@@ -9,18 +29,21 @@ export default function mount(container, ctx) {
   let score = 0;
   let endAt = 0;
   let spawnTimeout = null;
-  let hideTimeout = null;
   let hudRaf = null;
-  let activeHole = -1;
+  const holes = new Array(HOLE_COUNT).fill(null); // { color, hideTimeout } | null
 
   renderIntro();
 
   function renderIntro() {
-    container.innerHTML = "";
     container.innerHTML = `
       <div class="stage">
         <div class="stage-msg">30 secondes de taupes</div>
-        <div class="stage-sub">Une taupe sort au hasard, tape-la avant qu'elle ne redescende. Ça accélère au fil du temps.</div>
+        <div class="stage-sub">Rouge = tape (+1), Doré = tape (+3), Bleu = ne tape pas (-2). Plusieurs taupes peuvent sortir en même temps, de plus en plus vite.</div>
+        <div class="mole-legend">
+          <span><i style="background:var(--coral)"></i>+1</span>
+          <span><i style="background:var(--gold)"></i>+3</span>
+          <span><i style="background:var(--sky)"></i>-2</span>
+        </div>
         <button class="btn btn-primary" type="button" id="start">Commencer</button>
       </div>
     `;
@@ -31,10 +54,11 @@ export default function mount(container, ctx) {
     score = 0;
     running = true;
     endAt = performance.now() + DURATION_MS;
+    holes.fill(null);
     container.innerHTML = `
       <div class="hud">
         <div class="hud-stat"><div class="label">Temps</div><div class="value mono" id="time">30.0s</div></div>
-        <div class="hud-stat"><div class="label">Taupes</div><div class="value mono" id="score">0</div></div>
+        <div class="hud-stat"><div class="label">Score</div><div class="value mono" id="score">0</div></div>
       </div>
       <div class="stage">
         <div class="mole-grid" id="grid">
@@ -42,12 +66,17 @@ export default function mount(container, ctx) {
             .map((_, i) => `<button class="mole-hole" type="button" data-i="${i}"></button>`)
             .join("")}
         </div>
+        <div class="mole-legend">
+          <span><i style="background:var(--coral)"></i>+1</span>
+          <span><i style="background:var(--gold)"></i>+3</span>
+          <span><i style="background:var(--sky)"></i>-2 évite</span>
+        </div>
       </div>
     `;
     container.querySelectorAll(".mole-hole").forEach((hole) => {
       hole.addEventListener("pointerdown", () => onHoleTap(Number(hole.dataset.i)));
     });
-    scheduleSpawn(600);
+    scheduleSpawn(300);
     hudTick();
   }
 
@@ -57,37 +86,50 @@ export default function mount(container, ctx) {
 
   function scheduleSpawn(delay) {
     if (cancelled || !running) return;
-    spawnTimeout = setTimeout(spawnMole, delay);
+    spawnTimeout = setTimeout(trySpawn, delay);
   }
 
-  function spawnMole() {
+  function trySpawn() {
     if (cancelled || !running) return;
     if (performance.now() >= endAt) return finish();
-    const holes = container.querySelectorAll(".mole-hole");
-    if (!holes.length) return;
-    activeHole = Math.floor(Math.random() * holes.length);
-    holes[activeHole].classList.add("up");
-    const visible = Math.max(420, 950 - elapsedRatio() * 500);
-    hideTimeout = setTimeout(() => {
-      if (holes[activeHole]) holes[activeHole].classList.remove("up");
-      activeHole = -1;
-      const gap = Math.max(220, 500 - elapsedRatio() * 300);
-      scheduleSpawn(gap);
-    }, visible);
+
+    const emptyIdx = holes.map((h, i) => (h ? -1 : i)).filter((i) => i >= 0);
+    if (emptyIdx.length) {
+      const i = emptyIdx[Math.floor(Math.random() * emptyIdx.length)];
+      const color = pickColor();
+      const life = MIN_LIFE + Math.random() * (MAX_LIFE - MIN_LIFE);
+      const holeEl = container.querySelector(`.mole-hole[data-i="${i}"]`);
+      if (holeEl) {
+        holeEl.style.setProperty("--mole-color", color.css);
+        holeEl.classList.add("up");
+      }
+      const hideTimeout = setTimeout(() => {
+        if (holes[i] && holes[i].color === color) {
+          holes[i] = null;
+          if (holeEl) holeEl.classList.remove("up");
+        }
+      }, life);
+      holes[i] = { color, hideTimeout };
+    }
+
+    // cadence qui accélère avec le temps écoulé
+    const nextDelay = Math.max(220, 650 - elapsedRatio() * 430);
+    scheduleSpawn(nextDelay);
   }
 
   function onHoleTap(i) {
     if (!running || cancelled) return;
-    const hole = container.querySelector(`.mole-hole[data-i="${i}"]`);
-    if (i === activeHole && hole.classList.contains("up")) {
-      score += 1;
-      hole.classList.remove("up");
-      activeHole = -1;
-      const scoreEl = document.getElementById("score");
-      if (scoreEl) scoreEl.textContent = String(score);
-      clearTimeout(hideTimeout);
-      scheduleSpawn(150);
-    }
+    const entry = holes[i];
+    if (!entry) return;
+    clearTimeout(entry.hideTimeout);
+    holes[i] = null;
+    const holeEl = container.querySelector(`.mole-hole[data-i="${i}"]`);
+    if (holeEl) holeEl.classList.remove("up");
+
+    score = Math.max(0, score + entry.color.points);
+    const scoreEl = document.getElementById("score");
+    if (scoreEl) scoreEl.textContent = String(score);
+    ctx.toast(entry.color.points > 0 ? `+${entry.color.points}` : `${entry.color.points}`);
   }
 
   function hudTick() {
@@ -106,7 +148,7 @@ export default function mount(container, ctx) {
     if (!running) return;
     running = false;
     clearTimeout(spawnTimeout);
-    clearTimeout(hideTimeout);
+    holes.forEach((h) => h && clearTimeout(h.hideTimeout));
     if (hudRaf) cancelAnimationFrame(hudRaf);
     const outcome = await ctx.finish(score);
     showResult(container, ctx, score, outcome, { onReplay: startRun });
@@ -116,7 +158,7 @@ export default function mount(container, ctx) {
     cancelled = true;
     running = false;
     clearTimeout(spawnTimeout);
-    clearTimeout(hideTimeout);
+    holes.forEach((h) => h && clearTimeout(h.hideTimeout));
     if (hudRaf) cancelAnimationFrame(hudRaf);
   };
 }
