@@ -25,7 +25,7 @@ const firebaseConfig = {
   appId: "1:379516167783:web:5651d121b3eb2b493796c2"
 };
 
-const CONFIG = CONFIG_PLACEHOLDER;
+const CONFIG = firebaseConfig;
 
 const SDK_APP = "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 const SDK_FIRESTORE = "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
