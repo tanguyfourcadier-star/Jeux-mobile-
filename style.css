@@ -486,6 +486,26 @@ button{font-family:inherit;}
 .qte-prompt.is-wrong{background:var(--coral-dim);border-color:var(--coral);}
 .qte-prompt.is-wrong svg{stroke:var(--coral);}
 
+/* ============ Bandeau de mise à jour ============ */
+.update-banner{
+  position:fixed;top:0;left:0;right:0;z-index:95;
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px 14px;
+  background:var(--gold);color:var(--ink);
+  padding:10px max(16px,env(safe-area-inset-left));
+  padding-top:max(10px,env(safe-area-inset-top));
+  font-size:.85rem;font-weight:600;text-align:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.35);
+}
+.update-banner button{
+  border:none;border-radius:999px;cursor:pointer;font-family:inherit;
+}
+.update-banner #update-now{
+  background:var(--ink);color:var(--gold);padding:6px 16px;font-weight:700;font-size:.8rem;
+}
+.update-banner #update-later{
+  background:transparent;color:var(--ink);padding:4px 6px;font-size:1rem;line-height:1;opacity:.7;
+}
+
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important;}
 }

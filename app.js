@@ -559,6 +559,83 @@ document.getElementById("btn-home").addEventListener("click", () => {
 document.getElementById("btn-player").addEventListener("click", () => openPlayerModal());
 
 // ---------------------------------------------------------------------------
+// Détection de mise à jour
+// ---------------------------------------------------------------------------
+// Compare la version embarquée dans la page déjà chargée à celle réellement
+// publiée sur GitHub Pages (version.json, lu sans cache). Utile quand l'appli
+// reste ouverte (ou installée sur l'écran d'accueil) pendant qu'une nouvelle
+// version est poussée : sans ça, rien ne préviendrait l'utilisateur.
+
+const VERSION_CHECK_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+
+let runningVersion = null;
+let updateAvailable = false;
+
+async function fetchVersion(bustCache) {
+  const url = bustCache ? `version.json?t=${Date.now()}` : "version.json";
+  const res = await fetch(url, bustCache ? { cache: "no-store" } : { cache: "default" });
+  if (!res.ok) throw new Error("version.json indisponible");
+  const data = await res.json();
+  return data.version;
+}
+
+async function checkForUpdate() {
+  if (!runningVersion || updateAvailable) return;
+  try {
+    const liveVersion = await fetchVersion(true);
+    if (liveVersion && liveVersion !== runningVersion) {
+      updateAvailable = true;
+      showUpdateBanner();
+    }
+  } catch {
+    // pas de réseau ou GitHub Pages momentanément indisponible : on retentera au prochain cycle
+  }
+}
+
+function showUpdateBanner() {
+  if (document.getElementById("update-banner")) return;
+  const banner = el(`
+    <div class="update-banner" id="update-banner">
+      <span>Nouvelle version de Récré disponible</span>
+      <button type="button" id="update-now">Mettre à jour</button>
+      <button type="button" id="update-later" aria-label="Plus tard">✕</button>
+    </div>
+  `);
+  banner.querySelector("#update-now").addEventListener("click", applyUpdate);
+  banner.querySelector("#update-later").addEventListener("click", () => banner.remove());
+  document.body.appendChild(banner);
+}
+
+async function applyUpdate() {
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+  } catch {
+    // au pire, le rechargement seul suffit dans la grande majorité des cas
+  }
+  location.href = `${location.pathname}?_v=${Date.now()}`;
+}
+
+async function initVersionWatch() {
+  try {
+    runningVersion = await fetchVersion(false);
+  } catch {
+    return; // pas de version.json (ex. test local) : on ne bloque rien, juste pas de détection
+  }
+  checkForUpdate();
+  setInterval(checkForUpdate, VERSION_CHECK_INTERVAL_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkForUpdate();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Démarrage
 // ---------------------------------------------------------------------------
 
@@ -570,3 +647,5 @@ if (getPlayer()) {
   renderHub();
   openPlayerModal({ forceChoice: true });
 }
+
+initVersionWatch();
