@@ -10,6 +10,15 @@ const ICONS = {
   tap: '<circle cx="12" cy="12" r="3.2"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/>',
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/>',
   car: '<path d="M4 16 6 9h12l2 7"/><rect x="2.5" y="16" width="19" height="4.5" rx="1.6"/><circle cx="7.5" cy="20.5" r="1.6"/><circle cx="16.5" cy="20.5" r="1.6"/>',
+  mole: '<circle cx="12" cy="14" r="6"/><path d="M8 9 6.5 4M16 9l1.5-5"/>',
+  calc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M8 16h2M14 12h2M14 16h2"/>',
+  snake: '<path d="M3 15c3 0 3-6 6-6s3 6 6 6 3-6 6-6"/><circle cx="19.3" cy="9" r="1.6"/>',
+  aim: '<path d="M4 4h5M4 4v5M20 4h-5M20 4v5M4 20h5M4 20v-5M20 20h-5M20 20v-5"/><circle cx="12" cy="12" r="3"/>',
+  duel: '<circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3.5 2.5-6 5-6s5 2.5 5 6M12 20c0-3.5 2.5-6 5-6s5 2.5 5 6"/>',
+  flag: '<path d="M5 3v18"/><path d="M5 4h6l-1.5 3H16l-1.5 3H5"/>',
+  stairs: '<path d="M3 20h4v-4h4v-4h4v-4h4V4"/>',
+  knife: '<path d="M4 16 16 4l4 4-12 12H4v-4z"/><path d="M13 7l4 4"/>',
+  marble: '<circle cx="12" cy="14" r="5"/><path d="M4 8l3 2M20 8l-3 2M9 4l1 3M15 4l-1 3"/>',
 };
 
 export const GAMES = [
@@ -58,6 +67,88 @@ export const GAMES = [
     unit: "s",
     better: "high",
     icon: ICONS.car,
+  },
+  {
+    id: "mole",
+    name: "Tape-taupe",
+    tagline: "Tape les taupes dès qu'elles sortent, 30 secondes",
+    accent: "rose",
+    unit: "taupes",
+    better: "high",
+    icon: ICONS.mole,
+  },
+  {
+    id: "math",
+    name: "Calcul Éclair",
+    tagline: "Un max de bonnes réponses en 45 secondes",
+    accent: "sky",
+    unit: "bonnes réponses",
+    better: "high",
+    icon: ICONS.calc,
+  },
+  {
+    id: "snake",
+    name: "Snake",
+    tagline: "Mange, grandis, évite ta propre queue",
+    accent: "lime",
+    unit: "points",
+    better: "high",
+    icon: ICONS.snake,
+  },
+  {
+    id: "aim",
+    name: "Visée Express",
+    tagline: "20 secondes de cibles, entraîne-toi sans limite",
+    accent: "peach",
+    unit: "cibles",
+    better: "high",
+    icon: ICONS.aim,
+  },
+  {
+    id: "duel",
+    name: "Duel local",
+    tagline: "2 joueurs, un seul téléphone, meilleur des 5",
+    accent: "steel",
+    unit: "manches",
+    better: "high",
+    icon: ICONS.duel,
+    local2p: true,
+  },
+  {
+    id: "chrono",
+    name: "Chrono Piste",
+    tagline: "Incline ton téléphone pour piloter, toujours le même parcours, ~1 minute",
+    accent: "amber",
+    unit: "ms",
+    better: "low",
+    icon: ICONS.flag,
+  },
+  {
+    id: "marches",
+    name: "30 Marches",
+    tagline: "Appuie sur le bon bouton pour grimper, erreur = -2 marches",
+    accent: "teal",
+    unit: "ms",
+    better: "low",
+    icon: ICONS.stairs,
+  },
+  {
+    id: "decoupe",
+    name: "Découpe Express",
+    tagline: "Tranche le cornichon au doigt le plus vite possible",
+    accent: "crimson",
+    unit: "ms",
+    better: "low",
+    icon: ICONS.knife,
+  },
+  {
+    id: "bille",
+    name: "Bille Folle",
+    tagline: "Incline pour guider la bille dans les zones, 60 secondes",
+    accent: "indigo",
+    unit: "points",
+    better: "high",
+    icon: ICONS.marble,
   },
 ];
 
@@ -252,7 +343,9 @@ function renderHub() {
   const grid = el('<div class="tile-grid"></div>');
   GAMES.forEach((g) => {
     const isDone = g.daily && dailyAlreadyPlayed();
-    const bestLine = g.daily
+    const bestLine = g.local2p
+      ? "Sur le même téléphone, à deux"
+      : g.daily
       ? isDone
         ? `Fait aujourd'hui : <b>${formatValue(g, dailyResult())}</b>`
         : "Pas encore joué aujourd'hui"
@@ -297,6 +390,7 @@ async function renderRanks() {
   const me = getPlayer();
   const namesSeen = new Set();
   for (const g of GAMES) {
+    if (g.local2p) continue; // pas de classement partagé pour un duel local
     const section = el(`
       <section class="leader-section">
         <div class="leader-section-head">

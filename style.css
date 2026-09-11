@@ -15,6 +15,24 @@
   --violet-dim:#241f3d;
   --mint:#6bcf9c;
   --mint-dim:#173026;
+  --sky:#5eb3ff;
+  --sky-dim:#16283a;
+  --rose:#ff8fc0;
+  --rose-dim:#3a1f2c;
+  --lime:#c8e05c;
+  --lime-dim:#2a2f14;
+  --peach:#ffab73;
+  --peach-dim:#3a2418;
+  --steel:#9fb4c7;
+  --steel-dim:#232b33;
+  --amber:#ffa23e;
+  --amber-dim:#3a2a12;
+  --teal:#3ecfb0;
+  --teal-dim:#153029;
+  --indigo:#7c93ff;
+  --indigo-dim:#1f2440;
+  --crimson:#ff6b8a;
+  --crimson-dim:#3a1c26;
   --mist:#aab0c4;
   --paper:#f4f5f8;
   --font-display:'Unbounded',sans-serif;
@@ -347,6 +365,102 @@ button{font-family:inherit;}
   border-radius:var(--radius-sm);padding:16px;color:var(--paper);cursor:pointer;
 }
 .runner-controls svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ============ Tape-taupe ============ */
+.mole-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  width:100%;max-width:300px;
+}
+.mole-hole{
+  aspect-ratio:1;border-radius:50%;border:none;cursor:pointer;
+  background:radial-gradient(circle at 50% 40%, #2a2d3a 0%, #14151c 70%);
+  box-shadow:inset 0 4px 10px rgba(0,0,0,.5);
+  position:relative;overflow:hidden;
+}
+.mole-hole::after{
+  content:"";position:absolute;left:50%;bottom:-58%;width:64%;height:64%;
+  border-radius:50%;background:var(--rose);
+  transform:translateX(-50%);
+  transition:bottom .12s ease;
+}
+.mole-hole.up::after{bottom:14%;}
+
+/* ============ Choix multiples (Calcul Éclair) ============ */
+.choice-question{
+  font-family:var(--font-display);font-size:2rem;text-align:center;
+}
+.choice-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;
+}
+.choice-btn{
+  background:var(--panel-2);border:1px solid var(--line);color:var(--paper);
+  border-radius:var(--radius-sm);padding:18px 10px;font-family:var(--font-mono);
+  font-size:1.3rem;font-weight:700;cursor:pointer;
+}
+.choice-btn.is-correct{background:var(--mint-dim);border-color:var(--mint);color:var(--mint);}
+.choice-btn.is-wrong{background:var(--coral-dim);border-color:var(--coral);color:var(--coral);}
+
+/* ============ Snake : pavé directionnel ============ */
+.dpad{
+  display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(2,48px);
+  gap:8px;justify-content:center;
+}
+.dpad button{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+  color:var(--paper);display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.dpad button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.dpad .dpad-up{grid-column:2;grid-row:1;}
+.dpad .dpad-left{grid-column:1;grid-row:2;}
+.dpad .dpad-down{grid-column:2;grid-row:2;}
+.dpad .dpad-right{grid-column:3;grid-row:2;}
+
+/* ============ Visée Express ============ */
+.aim-target{
+  position:absolute;border-radius:50%;border:none;
+  background:var(--peach);box-shadow:0 0 0 6px var(--peach-dim);
+}
+
+/* ============ Duel local (2 joueurs) ============ */
+.duel-half{
+  flex:1;width:100%;border:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  transition:background .12s ease;
+}
+.duel-half .msg{font-family:var(--font-display);font-size:1.15rem;text-align:center;padding:0 16px;}
+.duel-half .sub{font-size:.78rem;color:var(--mist);}
+.duel-top{transform:rotate(180deg);border-radius:0 0 var(--radius) var(--radius);}
+.duel-bottom{border-radius:0 0 0 0;}
+.duel-stack{
+  display:flex;flex-direction:column;width:100%;min-height:420px;
+  border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);
+}
+.duel-half.state-wait{background:var(--panel-2);}
+.duel-half.state-armed{background:var(--gold-dim);}
+.duel-half.state-go{background:var(--mint);}
+.duel-half.state-go .msg{color:var(--ink);}
+.duel-half.state-early{background:var(--coral-dim);}
+.duel-score{
+  text-align:center;font-family:var(--font-mono);color:var(--mist);font-size:.85rem;margin-bottom:10px;
+}
+
+/* ============ 30 Marches : barre de progression + prompt ============ */
+.progress-bar{
+  width:100%;height:10px;border-radius:999px;background:var(--panel-2);
+  border:1px solid var(--line);overflow:hidden;
+}
+.progress-fill{
+  height:100%;background:var(--teal);border-radius:999px;
+  transition:width .12s ease;
+}
+.qte-prompt{
+  width:64px;height:64px;border-radius:16px;background:var(--panel-2);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  transition:background .12s ease, border-color .12s ease;
+}
+.qte-prompt svg{width:32px;height:32px;fill:none;stroke:var(--teal);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+.qte-prompt.is-wrong{background:var(--coral-dim);border-color:var(--coral);}
+.qte-prompt.is-wrong svg{stroke:var(--coral);}
 
 @media (prefers-reduced-motion:reduce){
   *{transition:none !important;animation:none !important;}

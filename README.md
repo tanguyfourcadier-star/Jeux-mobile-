@@ -1,6 +1,6 @@
 # Récré
 
-Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 5 jeux courts et un classement partagé entre amis. Gratuite à héberger, aucune app store, aucun serveur à maintenir.
+Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 14 jeux courts et un classement partagé entre amis. Gratuite à héberger, aucune app store, aucun serveur à maintenir.
 
 ## Contenu du dossier
 
@@ -9,6 +9,7 @@ index.html            page unique de l'appli
 style.css              tout le design
 app.js                  hub, navigation, pseudo, classements
 firebase-config.js      connexion au classement partagé (à configurer, voir plus bas)
+tilt-input.js           entrée "inclinaison" partagée (+ repli clavier/tactile)
 firestore.rules.txt     règles de sécurité à coller dans Firebase
 manifest.webmanifest    permet d'installer l'appli sur l'écran d'accueil
 icon-192.png / icon-512.png / icon-512-maskable.png
@@ -18,7 +19,18 @@ games/
   taprush.js   Tap Rush — un max de taps en 10 secondes
   daily.js     Défi du jour — même défi pour tous, seedé sur la date, 1 essai/jour
   runner.js    Course — évite les obstacles le plus longtemps possible
+  mole.js      Tape-taupe — 30 secondes, tape la taupe dès qu'elle sort
+  math.js      Calcul Éclair — 45 secondes de calcul mental à choix multiple
+  snake.js     Snake — grandis sans toucher les murs ni ta queue
+  aim.js       Visée Express — 20 secondes de cibles, rejouable à volonté
+  duel.js      Duel local — 2 joueurs sur le même téléphone, meilleur des 5 (pas de classement partagé)
+  chrono.js    Chrono Piste — pilote un véhicule à l'inclinaison sur un parcours fixe, meilleur temps
+  marches.js   30 Marches — appuie sur le bon bouton pour grimper, erreur = -2 marches
+  decoupe.js   Découpe Express — tranche un cornichon au doigt, meilleur temps
+  bille.js     Bille Folle — guide une bille à l'inclinaison dans des zones qui changent, 60s, score max
 ```
+
+**Jeux à inclinaison** (Chrono Piste, Bille Folle) : sur iPhone, Safari demande la permission d'accéder aux capteurs de mouvement au premier lancement de ces jeux (normal, propre à iOS 13+). Si elle est refusée ou indisponible (ordinateur, certains Android), ces jeux restent jouables au doigt (glisser sur l'écran) ou au clavier (flèches) — aucun blocage.
 
 Pas de build, pas de dépendances à installer : ce sont des fichiers statiques (HTML/CSS/JS modules). GitHub Pages les sert tels quels.
 
@@ -64,12 +76,20 @@ La première fois que le classement du **Défi du jour** est consulté, Firestor
 - **Android (Chrome)** : menu ⋮ → "Ajouter à l'écran d'accueil".
 - Chaque partie enregistre automatiquement le score dans le classement partagé sous le pseudo choisi.
 
-## 5. Limites à connaître
+## 5. Mettre à jour une installation existante
+
+Si tu as déjà déployé une version précédente de Récré :
+
+1. Remplace tous les fichiers de ton dépôt par ceux de ce dossier — y compris le nouveau `tilt-input.js` à la racine, requis par `chrono.js` et `bille.js`. `git add . && git commit && git push`.
+2. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores des jeux les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement entre amis pour ces jeux-là restera vide côté serveur.
+3. `firebase-config.js` n'a pas besoin d'être retouché si tu l'avais déjà configuré.
+
+## 6. Limites à connaître
 
 - Pas de compte/mot de passe : n'importe qui avec le lien peut jouer et écrire un score sous n'importe quel pseudo. Pensé pour un petit groupe de confiance, pas pour du public large.
 - Le **Défi du jour** empêche de rejouer via une mémoire locale à l'appareil (`localStorage`) — pas une vraie authentification, donc contournable en théorie (nouvel appareil/navigateur), suffisant pour jouer entre amis.
 
-## 6. Pour aller plus loin (pistes)
+## 7. Pour aller plus loin (pistes)
 
-- **Duels en temps réel** : Firestore permet d'écouter les changements en direct (`onSnapshot`) — on peut ajouter un mode où deux amis voient leurs scores évoluer l'un en face de l'autre pendant la partie.
+- **Duels en temps réel entre deux téléphones** : Firestore permet d'écouter les changements en direct (`onSnapshot`) — on peut ajouter un mode où deux amis, chacun sur son appareil, voient leurs scores évoluer l'un en face de l'autre pendant la partie (le **Duel local** actuel se joue à deux sur un seul téléphone, sans réseau).
 - **Groupes/équipes**, **historique par semaine**, **avatars**, **nouveaux mini-jeux** (le hub dans `app.js` + un fichier dans `games/` suffit à en ajouter un).

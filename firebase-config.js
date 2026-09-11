@@ -16,16 +16,16 @@
 // tu branches Firebase pour un vrai classement entre amis.
 // ============================================================================
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCJ6yG0la50nDwD8Ufuq-3nc8liO8-rfHw",
-  authDomain: "jeux-d56af.firebaseapp.com",
-  projectId: "jeux-d56af",
-  storageBucket: "jeux-d56af.firebasestorage.app",
-  messagingSenderId: "379516167783",
-  appId: "1:379516167783:web:5651d121b3eb2b493796c2"
+const CONFIG_PLACEHOLDER = {
+  apiKey: "REMPLACE_MOI",
+  authDomain: "REMPLACE_MOI.firebaseapp.com",
+  projectId: "REMPLACE_MOI",
+  storageBucket: "REMPLACE_MOI.appspot.com",
+  messagingSenderId: "REMPLACE_MOI",
+  appId: "REMPLACE_MOI",
 };
 
-const CONFIG = firebaseConfig;
+const CONFIG = CONFIG_PLACEHOLDER;
 
 const SDK_APP = "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 const SDK_FIRESTORE = "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
