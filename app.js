@@ -1,4 +1,4 @@
-import { submitScore, getLeaderboard, backendMode } from "./firebase-config.js";
+import { submitScore, getLeaderboard, submitComment, getComments, backendMode } from "./firebase-config.js";
 
 // ---------------------------------------------------------------------------
 // Registre des jeux
@@ -168,6 +168,27 @@ export function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function commentTimeMs(createdAt) {
+  if (!createdAt) return Date.now();
+  if (typeof createdAt === "number") return createdAt;
+  if (typeof createdAt.toMillis === "function") return createdAt.toMillis();
+  if (typeof createdAt.seconds === "number") return createdAt.seconds * 1000;
+  return Date.now();
+}
+
+function timeAgo(ms) {
+  const diff = Math.max(0, Date.now() - ms);
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `il y a ${h}h`;
+  const j = Math.floor(h / 24);
+  if (j < 7) return `il y a ${j}j`;
+  const d = new Date(ms);
+  return `le ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 function getPlayer() {
   return localStorage.getItem(LS_PLAYER) || "";
 }
@@ -238,6 +259,10 @@ function el(html) {
   const t = document.createElement("template");
   t.innerHTML = html.trim();
   return t.content.firstElementChild;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 let toastTimer = null;
@@ -418,6 +443,98 @@ async function renderRanks() {
 }
 
 // ---------------------------------------------------------------------------
+// Commentaires (mur partagé)
+// ---------------------------------------------------------------------------
+
+const MAX_COMMENT_LEN = 240;
+
+async function renderComments() {
+  tabbar.hidden = false;
+  setActiveTab("comments");
+  view.innerHTML = "";
+  view.appendChild(
+    el(`
+      <section class="ranks-head">
+        <h1>Commentaires</h1>
+        <p>${
+          backendMode === "cloud"
+            ? "Visibles par tous ceux qui ont le lien — laisse un avis, une idée, un bug repéré."
+            : "Mode local : configure Firebase (voir README) pour que tes amis voient tes commentaires."
+        }</p>
+      </section>
+    `)
+  );
+
+  const form = el(`
+    <form class="comment-form" id="comment-form">
+      <textarea id="comment-text" maxlength="${MAX_COMMENT_LEN}" rows="3" placeholder="Ton avis, une idée de jeu, un bug…"></textarea>
+      <div class="comment-form-foot">
+        <span class="comment-as">Publié sous <b id="comment-as-name">${escapeHtml(getPlayer() || "toi")}</b></span>
+        <button class="btn btn-primary" type="submit" id="comment-send">Envoyer</button>
+      </div>
+    </form>
+  `);
+  view.appendChild(form);
+
+  const list = el('<div class="comment-list" id="comment-list"><div class="leader-loading">Chargement…</div></div>');
+  view.appendChild(list);
+
+  form.querySelector("#comment-as-name").addEventListener("click", () => openPlayerModal());
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const textarea = form.querySelector("#comment-text");
+    const text = textarea.value.trim().slice(0, MAX_COMMENT_LEN);
+    if (!text) {
+      textarea.focus();
+      return;
+    }
+    if (!getPlayer()) {
+      openPlayerModal({ forceChoice: true });
+      return;
+    }
+    const sendBtn = form.querySelector("#comment-send");
+    sendBtn.disabled = true;
+    try {
+      await submitComment({ player: getPlayer(), text });
+      textarea.value = "";
+      toast("Merci pour ton commentaire !");
+      loadComments();
+    } catch (err) {
+      console.error("[Récré] envoi du commentaire impossible", err);
+      toast("Envoi impossible, réessaie");
+    } finally {
+      sendBtn.disabled = false;
+    }
+  });
+
+  function loadComments() {
+    getComments(50).then((rows) => {
+      const body = document.getElementById("comment-list");
+      if (!body) return;
+      body.innerHTML = "";
+      if (!rows.length) {
+        body.appendChild(el('<div class="leader-empty">Aucun commentaire pour l\'instant — sois le premier !</div>'));
+        return;
+      }
+      rows.forEach((r) => {
+        body.appendChild(
+          el(`
+            <div class="comment-row">
+              <div class="comment-row-head">
+                <span class="comment-player">${escapeHtml(r.player)}</span>
+                <span class="comment-time mono">${timeAgo(commentTimeMs(r.createdAt))}</span>
+              </div>
+              <div class="comment-text">${escapeHtml(r.text)}</div>
+            </div>
+          `)
+        );
+      });
+    });
+  }
+  loadComments();
+}
+
+// ---------------------------------------------------------------------------
 // Carte de résultat partagée entre les jeux
 // ---------------------------------------------------------------------------
 
@@ -534,6 +651,7 @@ let current = "hub";
 function renderCurrentView() {
   if (current === "hub") renderHub();
   else if (current === "ranks") renderRanks();
+  else if (current === "comments") renderComments();
 }
 
 tabbar.querySelectorAll(".tab").forEach((btn) => {

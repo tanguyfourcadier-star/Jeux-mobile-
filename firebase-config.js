@@ -89,9 +89,44 @@ export async function getLeaderboard(game, order = "asc", limitN = 10, dateEq = 
   return getLeaderboardLocal(game, order, limitN, dateEq);
 }
 
+// ---------- Commentaires (livre d'or partagé) ----------
+
+export async function submitComment({ player, text }) {
+  const row = { player, text, createdAt: Date.now() };
+  if (backendMode === "cloud") {
+    try {
+      const { db, fs } = await cloud();
+      await fs.addDoc(fs.collection(db, "comments"), {
+        ...row,
+        createdAt: fs.serverTimestamp(),
+      });
+      return "cloud";
+    } catch (err) {
+      console.error("[Récré] envoi du commentaire impossible en cloud, sauvegarde locale à la place :", err);
+    }
+  }
+  submitCommentLocal(row);
+  return "local";
+}
+
+export async function getComments(limitN = 50) {
+  if (backendMode === "cloud") {
+    try {
+      const { db, fs } = await cloud();
+      const q = fs.query(fs.collection(db, "comments"), fs.orderBy("createdAt", "desc"), fs.limit(limitN));
+      const snap = await fs.getDocs(q);
+      return snap.docs.map((d) => d.data());
+    } catch (err) {
+      console.error("[Récré] lecture cloud des commentaires impossible, liste locale à la place :", err);
+    }
+  }
+  return getCommentsLocal(limitN);
+}
+
 // ---------- Repli local (localStorage) ----------
 
 const LOCAL_KEY = "recre.scores.v1";
+const LOCAL_COMMENTS_KEY = "recre.comments.v1";
 
 function readLocal() {
   try {
@@ -114,5 +149,29 @@ function submitScoreLocal(row) {
 function getLeaderboardLocal(game, order, limitN, dateEq) {
   const rows = readLocal().filter((r) => r.game === game && (!dateEq || r.date === dateEq));
   rows.sort((a, b) => (order === "asc" ? a.value - b.value : b.value - a.value));
+  return rows.slice(0, limitN);
+}
+
+function readLocalComments() {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_COMMENTS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function submitCommentLocal(row) {
+  const rows = readLocalComments();
+  rows.push(row);
+  try {
+    localStorage.setItem(LOCAL_COMMENTS_KEY, JSON.stringify(rows));
+  } catch (err) {
+    console.error("[Récré] impossible d'écrire le commentaire dans localStorage", err);
+  }
+}
+
+function getCommentsLocal(limitN) {
+  const rows = readLocalComments().slice();
+  rows.sort((a, b) => b.createdAt - a.createdAt);
   return rows.slice(0, limitN);
 }

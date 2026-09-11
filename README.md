@@ -30,6 +30,8 @@ games/
   bille.js     Bille Folle — guide une bille à l'inclinaison (calibrée à plat) dans des zones qui changent, 60s, score max
 ```
 
+Un troisième onglet **Avis** (à côté de Jeux et Classements) permet à chacun de laisser un commentaire public (240 caractères max) sous son pseudo — un mur partagé, pas de jeu ni de score associé. Même mécanique que les classements : partagé en direct si Firebase est configuré, gardé en local sinon.
+
 **Jeux à inclinaison** (Chrono Piste, Bille Folle) : sur iPhone, Safari demande la permission d'accéder aux capteurs de mouvement au premier lancement de ces jeux (normal, propre à iOS 13+). Si elle est refusée ou indisponible (ordinateur, certains Android), ces jeux restent jouables au doigt (glisser sur l'écran) ou au clavier (flèches) — aucun blocage.
 
 Pas de build, pas de dépendances à installer : ce sont des fichiers statiques (HTML/CSS/JS modules). GitHub Pages les sert tels quels.

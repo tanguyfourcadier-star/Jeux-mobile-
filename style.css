@@ -346,6 +346,32 @@ button{font-family:inherit;}
 .leader-empty{color:var(--mist);font-size:.85rem;padding:8px 4px;}
 .leader-loading{color:var(--mist);font-size:.85rem;padding:8px 4px;}
 
+/* ============ Commentaires ============ */
+.comment-form{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px;margin-bottom:16px;
+}
+.comment-form textarea{
+  width:100%;resize:vertical;min-height:64px;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+  color:var(--paper);font-family:inherit;font-size:.92rem;padding:10px 12px;
+}
+.comment-form textarea:focus{outline:2px solid var(--coral);outline-offset:1px;}
+.comment-form-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;
+}
+.comment-as{color:var(--mist);font-size:.78rem;}
+.comment-as b{color:var(--paper);cursor:pointer;text-decoration:underline dotted;}
+.comment-list{display:flex;flex-direction:column;gap:10px;}
+.comment-row{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:12px 14px;
+}
+.comment-row-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+.comment-player{font-weight:700;font-size:.88rem;}
+.comment-time{color:var(--mist);font-size:.72rem;margin-left:auto;}
+.comment-text{font-size:.88rem;line-height:1.4;white-space:pre-wrap;word-break:break-word;}
+
 /* ============ Toasts ============ */
 .toast{
   position:fixed;left:50%;bottom:calc(78px + env(safe-area-inset-bottom));

@@ -4,14 +4,15 @@
 // puis clique sur "Publier".
 //
 // Ce que ça fait :
-//  - tout le monde peut LIRE les scores (nécessaire pour afficher les classements)
+//  - tout le monde peut LIRE les scores et les commentaires (classements + mur de commentaires)
 //  - n'importe qui peut AJOUTER un score, mais uniquement s'il a la bonne forme
-//    (un des 5 jeux connus, un pseudo de 1 à 18 caractères, une valeur numérique
-//    raisonnable)
-//  - personne ne peut modifier ni supprimer un score déjà enregistré
+//    (un jeu connu, un pseudo de 1 à 18 caractères, une valeur numérique raisonnable)
+//  - n'importe qui peut AJOUTER un commentaire, mais uniquement s'il a la bonne forme
+//    (un pseudo de 1 à 18 caractères, un texte de 1 à 240 caractères)
+//  - personne ne peut modifier ni supprimer un score ou un commentaire déjà enregistré
 //
 // C'est un système sans compte, pensé pour un petit groupe d'amis de confiance :
-// ça filtre les erreurs de forme, pas la triche délibérée.
+// ça filtre les erreurs de forme, pas la triche/les abus délibérés.
 
 rules_version = '2';
 
@@ -30,6 +31,20 @@ service cloud.firestore {
                     && request.resource.data.value is number
                     && request.resource.data.value >= 0
                     && request.resource.data.value < 1000000;
+
+      allow update, delete: if false;
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(['player', 'text', 'createdAt'])
+                    && request.resource.data.player is string
+                    && request.resource.data.player.size() > 0
+                    && request.resource.data.player.size() <= 18
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 240;
 
       allow update, delete: if false;
     }
