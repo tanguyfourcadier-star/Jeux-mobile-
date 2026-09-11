@@ -1,31 +1,20 @@
 // ============================================================================
 // Récré — connexion au classement partagé (Firebase Firestore, gratuit)
 //
-// 1. Va sur https://console.firebase.google.com → "Ajouter un projet" (gratuit,
-//    pas de carte bancaire demandée sur le plan Spark).
-// 2. Dans le projet : Build → Firestore Database → "Créer une base de données"
-//    (mode production), région au choix (ex: eur3).
-// 3. Dans Firestore → onglet "Règles", colle le contenu de firestore.rules.txt
-//    (fourni à côté de ce fichier) puis "Publier".
-// 4. Paramètres du projet (roue crantée) → tout en bas → "Vos applications" →
-//    icône "</>" → donne-lui un nom → copie l'objet firebaseConfig affiché.
-// 5. Colle-le ci-dessous à la place de CONFIG_PLACEHOLDER.
+// Les identifiants Firebase eux-mêmes vivent dans firebase-keys.js (à côté de
+// ce fichier), volontairement séparés : ce fichier-ci (firebase-config.js)
+// est réécrit à chaque mise à jour de l'appli, alors que firebase-keys.js ne
+// doit JAMAIS être remplacé une fois configuré. Voir firebase-keys.js pour
+// la marche à suivre.
 //
-// Tant que ce fichier n'est pas configuré, Récré fonctionne quand même : les
-// scores sont juste gardés en local sur l'appareil (mode solo), le temps que
-// tu branches Firebase pour un vrai classement entre amis.
+// Tant que firebase-keys.js n'est pas configuré, Récré fonctionne quand
+// même : les scores sont juste gardés en local sur l'appareil (mode solo),
+// le temps que tu branches Firebase pour un vrai classement entre amis.
 // ============================================================================
 
-const CONFIG_PLACEHOLDER = {
-  apiKey: "REMPLACE_MOI",
-  authDomain: "REMPLACE_MOI.firebaseapp.com",
-  projectId: "REMPLACE_MOI",
-  storageBucket: "REMPLACE_MOI.appspot.com",
-  messagingSenderId: "REMPLACE_MOI",
-  appId: "REMPLACE_MOI",
-};
+import { firebaseConfig } from "./firebase-keys.js";
 
-const CONFIG = CONFIG_PLACEHOLDER;
+const CONFIG = firebaseConfig;
 
 const SDK_APP = "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 const SDK_FIRESTORE = "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";

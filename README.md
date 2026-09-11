@@ -8,7 +8,8 @@ Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 13 j
 index.html            page unique de l'appli
 style.css              tout le design
 app.js                  hub, navigation, pseudo, classements
-firebase-config.js      connexion au classement partagé (à configurer, voir plus bas)
+firebase-config.js      logique de connexion au classement partagé (réécrit à chaque mise à jour de l'appli)
+firebase-keys.js        tes identifiants Firebase perso — À NE JAMAIS ÉCRASER une fois configuré (voir plus bas)
 tilt-input.js           entrée "inclinaison" partagée (+ repli clavier/tactile)
 firestore.rules.txt     règles de sécurité à coller dans Firebase
 manifest.webmanifest    permet d'installer l'appli sur l'écran d'accueil
@@ -63,7 +64,7 @@ Sans cette étape, chaque ami ne voit que ses propres scores (mode local). Pour 
 2. Dans le projet : **Build → Firestore Database → Créer une base de données**, mode **production**, région au choix (ex. `eur3` pour l'Europe).
 3. Onglet **Règles** de Firestore : colle le contenu de `firestore.rules.txt`, puis **Publier**.
 4. Roue crantée (Paramètres du projet) → tout en bas, section "Vos applications" → icône `</>` (Web) → donne un nom à l'appli → Firebase affiche un objet `firebaseConfig`.
-5. Ouvre `firebase-config.js` dans ce dossier, remplace l'objet `CONFIG_PLACEHOLDER` par celui copié, et repousse (`git commit` + `git push`).
+5. Ouvre **`firebase-keys.js`** (pas `firebase-config.js`) dans ce dossier, remplace l'objet `REMPLACE_MOI` par celui copié, et repousse (`git commit` + `git push`).
 
 C'est tout : l'appli détecte automatiquement qu'elle est configurée et passe en mode partagé.
 
@@ -82,10 +83,12 @@ La première fois que le classement du **Défi du jour** est consulté, Firestor
 
 Si tu as déjà déployé une version précédente de Récré :
 
-1. Remplace tous les fichiers de ton dépôt par ceux de ce dossier — y compris le nouveau `tilt-input.js` à la racine, requis par `chrono.js` et `bille.js`. `git add . && git commit && git push`.
-2. Si `games/decoupe.js` existe encore dans ton dépôt (ancienne version), supprime-le manuellement — ce jeu a été retiré et n'est plus référencé par l'appli, mais le fichier orphelin ne partira pas tout seul.
-3. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores des jeux les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement entre amis pour ces jeux-là restera vide côté serveur.
-4. `firebase-config.js` n'a pas besoin d'être retouché si tu l'avais déjà configuré.
+1. **⚠️ Ne remplace PAS `firebase-keys.js`** si tu l'avais déjà configuré (si ton fichier actuel contient encore `REMPLACE_MOI`, tu peux l'écraser sans souci). C'est le seul fichier à traiter à part — tous les autres se remplacent sans réfléchir.
+2. Remplace tous les autres fichiers de ton dépôt par ceux de ce dossier — y compris `tilt-input.js` et `firebase-config.js` à la racine. `git add . && git commit && git push`.
+3. Si `games/decoupe.js` existe encore dans ton dépôt (ancienne version), supprime-le manuellement — ce jeu a été retiré et n'est plus référencé par l'appli, mais le fichier orphelin ne partira pas tout seul.
+4. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux/collections autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores ou commentaires les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement/mur de commentaires entre amis restera vide côté serveur pour ce qui est nouveau.
+
+**Si tu vois "Sauvé en local (Firebase non configuré)" alors que tu avais déjà branché Firebase** : c'est très probablement que `firebase-keys.js` a été écrasé lors d'une mise à jour précédente (avant que ce fichier existe séparément). Il suffit de refaire l'étape 5 de la section 3 ci-dessus — pas besoin de recréer un projet Firebase, tes identifiants sont toujours visibles dans Firebase Console (roue crantée → Vos applications).
 
 ## 6. Détection automatique des mises à jour
 
