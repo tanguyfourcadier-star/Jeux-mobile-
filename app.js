@@ -622,6 +622,7 @@ async function openGame(gameId) {
         value,
         meta,
         date: g.daily ? todayKey() : null,
+        better: g.better,
       });
       return { isNewBest, mode };
     },

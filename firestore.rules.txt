@@ -7,9 +7,13 @@
 //  - tout le monde peut LIRE les scores et les commentaires (classements + mur de commentaires)
 //  - n'importe qui peut AJOUTER un score, mais uniquement s'il a la bonne forme
 //    (un jeu connu, un pseudo de 1 à 18 caractères, une valeur numérique raisonnable)
+//  - un score existant peut être MIS À JOUR (un seul document par joueur et par jeu :
+//    l'appli n'écrit une nouvelle valeur que si elle améliore le record), mais uniquement
+//    en gardant la même forme et sans changer le jeu/le pseudo/le jour associés au document
 //  - n'importe qui peut AJOUTER un commentaire, mais uniquement s'il a la bonne forme
-//    (un pseudo de 1 à 18 caractères, un texte de 1 à 240 caractères)
-//  - personne ne peut modifier ni supprimer un score ou un commentaire déjà enregistré
+//    (un pseudo de 1 à 18 caractères, un texte de 1 à 240 caractères) — pas de modification
+//    ni de suppression possible une fois publié
+//  - personne ne peut supprimer un score ou un commentaire
 //
 // C'est un système sans compte, pensé pour un petit groupe d'amis de confiance :
 // ça filtre les erreurs de forme, pas la triche/les abus délibérés.
@@ -19,20 +23,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function validScore(d) {
+      return d.keys().hasOnly(['game', 'player', 'value', 'meta', 'date', 'createdAt'])
+             && d.game is string
+             && d.game in ['reflex', 'memory', 'taprush', 'daily', 'runner', 'mole', 'math', 'snake', 'aim', 'chrono', 'marches', 'bille']
+             && d.player is string
+             && d.player.size() > 0
+             && d.player.size() <= 18
+             && d.value is number
+             && d.value >= 0
+             && d.value < 1000000;
+    }
+
     match /scores/{scoreId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['game', 'player', 'value', 'meta', 'date', 'createdAt'])
-                    && request.resource.data.game is string
-                    && request.resource.data.game in ['reflex', 'memory', 'taprush', 'daily', 'runner', 'mole', 'math', 'snake', 'aim', 'chrono', 'marches', 'bille']
-                    && request.resource.data.player is string
-                    && request.resource.data.player.size() > 0
-                    && request.resource.data.player.size() <= 18
-                    && request.resource.data.value is number
-                    && request.resource.data.value >= 0
-                    && request.resource.data.value < 1000000;
+      allow create: if validScore(request.resource.data);
 
-      allow update, delete: if false;
+      // Mise à jour d'un score existant uniquement pour l'améliorer : même jeu,
+      // même joueur, même jour — la valeur elle-même n'est pas comparée ici
+      // (l'appli ne réécrit que si c'est mieux), même niveau de confiance que "create".
+      allow update: if validScore(request.resource.data)
+                    && request.resource.data.game == resource.data.game
+                    && request.resource.data.player == resource.data.player
+                    && request.resource.data.date == resource.data.date;
+
+      allow delete: if false;
     }
 
     match /comments/{commentId} {

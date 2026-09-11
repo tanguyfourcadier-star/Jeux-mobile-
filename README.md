@@ -2,6 +2,8 @@
 
 Une mini appli web (installable sur l'écran d'accueil du téléphone) avec 13 jeux courts et un classement partagé entre amis. Gratuite à héberger, aucune app store, aucun serveur à maintenir.
 
+Chaque classement affiche le **top 5**, un seul résultat par pseudo (le meilleur de chacun — pas un historique de toutes les parties jouées).
+
 ## Contenu du dossier
 
 ```
@@ -70,7 +72,7 @@ C'est tout : l'appli détecte automatiquement qu'elle est configurée et passe e
 
 **Limite gratuite Firestore (plan Spark)** : 50 000 lectures et 20 000 écritures par jour. Pour 2 à 10 amis qui jouent régulièrement, c'est très largement suffisant — tu ne paieras jamais rien pour cet usage.
 
-La première fois que le classement du **Défi du jour** est consulté, Firestore peut demander la création d'un index composite (il te donne un lien direct dans la console/les logs pour le créer en un clic, ~1 minute). C'est normal, ça n'arrive qu'une fois.
+La première fois que le classement du **Défi du jour** est consulté, ou que tu joues et rejoues à un jeu (l'appli vérifie ton record existant avant chaque envoi), Firestore peut demander la création d'un index composite (il te donne un lien direct dans la console/les logs pour le créer en un clic, ~1 minute). C'est normal, ça n'arrive qu'une fois par cas d'usage.
 
 ## 4. Utiliser l'appli
 
@@ -86,7 +88,7 @@ Si tu as déjà déployé une version précédente de Récré :
 1. **⚠️ Ne remplace PAS `firebase-keys.js`** si tu l'avais déjà configuré (si ton fichier actuel contient encore `REMPLACE_MOI`, tu peux l'écraser sans souci). C'est le seul fichier à traiter à part — tous les autres se remplacent sans réfléchir.
 2. Remplace tous les autres fichiers de ton dépôt par ceux de ce dossier — y compris `tilt-input.js` et `firebase-config.js` à la racine. `git add . && git commit && git push`.
 3. Si `games/decoupe.js` existe encore dans ton dépôt (ancienne version), supprime-le manuellement — ce jeu a été retiré et n'est plus référencé par l'appli, mais le fichier orphelin ne partira pas tout seul.
-4. Republie les règles Firestore : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt` (la liste des jeux/collections autorisés a changé à chaque ajout), **Publier**. Si tu sautes cette étape, les scores ou commentaires les plus récents seront simplement gardés en local sur chaque téléphone au lieu d'être partagés — l'appli ne plantera pas, mais le classement/mur de commentaires entre amis restera vide côté serveur pour ce qui est nouveau.
+4. **Republie les règles Firestore, cette fois c'est important** : retourne dans Firebase Console → Firestore Database → **Règles**, colle le contenu à jour de `firestore.rules.txt`, **Publier**. Depuis cette version, l'appli met à jour un score existant (pour ne garder qu'un seul record par pseudo) au lieu de se contenter d'en ajouter — sans les nouvelles règles, ces mises à jour seront refusées par Firestore et l'appli basculera en sauvegarde locale à la place (pas de plantage, mais les scores ne se partageront plus tant que ce n'est pas fait).
 
 **Si tu vois "Sauvé en local (Firebase non configuré)" alors que tu avais déjà branché Firebase** : c'est très probablement que `firebase-keys.js` a été écrasé lors d'une mise à jour précédente (avant que ce fichier existe séparément). Il suffit de refaire l'étape 5 de la section 3 ci-dessus — pas besoin de recréer un projet Firebase, tes identifiants sont toujours visibles dans Firebase Console (roue crantée → Vos applications).
 

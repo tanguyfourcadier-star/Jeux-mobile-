@@ -39,21 +39,34 @@ async function cloud() {
 
 // ---------- API publique ----------
 
-export async function submitScore({ game, player, value, meta = {}, date = null }) {
+// Un seul score conservé par (jeu, joueur [, jour pour le Défi du jour]) : on
+// ne garde que le meilleur — pas un historique de toutes les parties jouées.
+// `better` indique le sens de comparaison ("low" = un temps par ex., "high"
+// = un score classique).
+function isImprovement(better, newValue, oldValue) {
+  return better === "low" ? newValue < oldValue : newValue > oldValue;
+}
+
+export async function submitScore({ game, player, value, meta = {}, date = null, better = "high" }) {
   const row = { game, player, value, meta, date, createdAt: Date.now() };
   if (backendMode === "cloud") {
     try {
       const { db, fs } = await cloud();
-      await fs.addDoc(fs.collection(db, "scores"), {
-        ...row,
-        createdAt: fs.serverTimestamp(),
-      });
+      const clauses = [fs.where("game", "==", game), fs.where("player", "==", player)];
+      if (date) clauses.push(fs.where("date", "==", date));
+      const existing = await fs.getDocs(fs.query(fs.collection(db, "scores"), ...clauses, fs.limit(1)));
+      if (existing.empty) {
+        await fs.addDoc(fs.collection(db, "scores"), { ...row, createdAt: fs.serverTimestamp() });
+      } else if (isImprovement(better, value, existing.docs[0].data().value)) {
+        await fs.setDoc(existing.docs[0].ref, { ...row, createdAt: fs.serverTimestamp() });
+      }
+      // sinon : pas une amélioration, on ne réécrit rien (le meilleur score reste en place)
       return "cloud";
     } catch (err) {
       console.error("[Récré] envoi cloud impossible, sauvegarde locale à la place :", err);
     }
   }
-  submitScoreLocal(row);
+  submitScoreLocal(row, better);
   return "local";
 }
 
@@ -125,9 +138,16 @@ function readLocal() {
   }
 }
 
-function submitScoreLocal(row) {
+function submitScoreLocal(row, better = "high") {
   const rows = readLocal();
-  rows.push(row);
+  const idx = rows.findIndex(
+    (r) => r.game === row.game && r.player === row.player && (row.date ? r.date === row.date : !r.date)
+  );
+  if (idx === -1) {
+    rows.push(row);
+  } else if (isImprovement(better, row.value, rows[idx].value)) {
+    rows[idx] = row;
+  }
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(rows));
   } catch (err) {
